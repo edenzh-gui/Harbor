@@ -14,18 +14,32 @@ helm version
 ```
 
 ### 2. 配置 containerd 信任不安全的 Registry (HTTP)
-由于我们仅作学习，Harbor 将通过 HTTP 提供服务（若使用自签名证书也会报不信任）。我们需要配置 2 台虚拟机的 containerd，让其信任 Harbor 仓库。
+由于 Harbor 采用 HTTP 提供服务（若使用自签名证书也会报不信任），我们需要配置 2 台虚拟机的 containerd，让其信任 Harbor 仓库，否则在 `pull` 或 `push` 镜像时会报 `http: server gave HTTP response to HTTPS client` 的错误。
 
 > [!IMPORTANT]
 > 以下步骤需要在 **所有 K8s 节点（Master 和 Node）** 上执行。
 
-假设您的 Harbor 将运行在虚拟机的 IP 上，我们设定该 IP 为 `<VM_IP>`（例如 `192.168.1.100`），端口我们假设映射为 `30002`。
+假设您的 Harbor 将运行在虚拟机的 IP 上，设该 IP 为 `<VM_IP>`（例如 `192.168.1.100`），端口映射为 `30002`。
 
-修改 containerd 的配置文件 `/etc/containerd/config.toml`：
+#### 第一步：开启 containerd 的 certs.d 配置目录支持
+默认情况下，新建的 K8s 集群可能没有开启外部 Registry 配置目录。我们需要修改 containerd 的主配置文件：
+
+1. 编辑配置文件 `/etc/containerd/config.toml`（如果没有该文件，可通过 `containerd config default > /etc/containerd/config.toml` 生成一份默认配置）。
+2. 在文件中找到 `[plugins."io.containerd.grpc.v1.cri".registry]` 这一段。
+3. 确保包含 `config_path = "/etc/containerd/certs.d"`，修改后应该是这样的：
+   ```toml
+   [plugins."io.containerd.grpc.v1.cri".registry]
+     config_path = "/etc/containerd/certs.d"
+   ```
+
+#### 第二步：创建 Harbor 的专属镜像仓库配置 (hosts.toml)
+containerd 采用基于目录的配置方式，我们需要为我们的 Harbor 地址创建一个同名文件夹。
 
 ```bash
+# 1. 创建存放证书/配置的目录 (目录名必须与镜像仓库地址完全一致)
 mkdir -p /etc/containerd/certs.d/<VM_IP>:30002
 
+# 2. 写入 hosts.toml 配置，明确告知使用 http 协议并跳过 TLS 验证
 cat <<EOF > /etc/containerd/certs.d/<VM_IP>:30002/hosts.toml
 server = "http://<VM_IP>:30002"
 
@@ -33,12 +47,17 @@ server = "http://<VM_IP>:30002"
   capabilities = ["pull", "resolve", "push"]
   skip_verify = true
 EOF
-
-# 重启 containerd 使配置生效
-systemctl restart containerd
 ```
 
-*(备注：如果您配置了域名访问，如 `hub.local.com`，需要将 `<VM_IP>:30002` 替换为域名，并确保集群中所有节点的 `/etc/hosts` 中添加了该域名的解析 `<VM_IP> hub.local.com`。)*
+#### 第三步：重启服务使配置生效
+修改完成后，重启 containerd 进程：
+```bash
+systemctl daemon-reload
+systemctl restart containerd
+systemctl status containerd
+```
+
+*(备注：如果您计划配置域名访问，如 `hub.local.com:30002`，那么上述所有的 `<VM_IP>:30002` 都需要替换为 `hub.local.com:30002`，并确保集群中所有节点的 `/etc/hosts` 中添加了该域名的解析：`<VM_IP> hub.local.com`。)*
 
 ---
 
