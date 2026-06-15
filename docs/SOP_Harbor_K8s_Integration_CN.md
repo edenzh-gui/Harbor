@@ -25,11 +25,11 @@ helm version
 默认情况下，新建的 K8s 集群可能没有开启外部 Registry 配置目录。我们需要修改 containerd 的主配置文件：
 
 1. 编辑配置文件 `/etc/containerd/config.toml`（如果没有该文件，可通过 `containerd config default > /etc/containerd/config.toml` 生成一份默认配置）。
-2. 在文件中找到 `[plugins."io.containerd.grpc.v1.cri".registry]` 这一段。
+2. 在文件中找到 `[plugins.'io.containerd.cri.v1.images'.registry]` 这一段。
 3. 确保包含 `config_path = "/etc/containerd/certs.d"`，修改后应该是这样的：
    ```toml
-   [plugins."io.containerd.grpc.v1.cri".registry]
-     config_path = "/etc/containerd/certs.d"
+   [plugins.'io.containerd.cri.v1.images'.registry]
+     config_path = '/etc/containerd/certs.d'
    ```
 
 #### 第二步：创建 Harbor 的专属镜像仓库配置 (hosts.toml)
@@ -63,21 +63,29 @@ systemctl status containerd
 
 ## 阶段二：部署 Harbor
 
-我们将使用 Helm 部署 Harbor。
+我们将使用 Helm 将 Harbor 的 Chart 拉取到本地后再进行部署。这有助于您查看原生配置模板，也非常适合在内网或离线环境中操作。
 
-### 1. 添加 Harbor Helm 仓库
+### 1. 添加仓库并拉取 Harbor Chart 到本地
+首先，添加官方仓库并更新：
 ```bash
 helm repo add harbor https://helm.goharbor.io
 helm repo update
 ```
 
-### 2. 根据 `harbor-values.yaml` 安装
-将本项目中的 `harbor-values.yaml` 文件上传到您的主节点。
-执行部署命令：
+然后，将 Harbor 的 Helm Chart 下载到本地并解压：
+```bash
+helm pull harbor/harbor --untar
+```
+执行完毕后，您所在的当前目录下会多出一个名为 `harbor` 的文件夹，里面包含了该版本所有的模板文件和默认 `values.yaml`。
+
+### 2. 使用本地 Chart 和自定义 `harbor-values.yaml` 安装
+将本项目生成的自定义配置文件 `harbor-values.yaml` 上传到您的主节点，并确保它放在与刚解压出来的 `harbor` 目录**同级的路径下**。
+
+创建命名空间，并指定**本地解压的目录**执行安装：
 ```bash
 kubectl create namespace harbor
-# 安装 harbor (发布名称为 my-harbor)
-helm install my-harbor harbor/harbor -n harbor -f harbor-values.yaml
+# 安装 harbor，注意这里使用的是本地的 ./harbor 目录
+helm install my-harbor ./harbor -n harbor -f harbor-values.yaml
 ```
 
 等待 Pod 启动完毕：
