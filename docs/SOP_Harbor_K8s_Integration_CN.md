@@ -103,9 +103,15 @@ kubectl get pods -n harbor -w
 3. 项目名称填写 `my-project`。
 4. 访问级别保持为默认的**私有**。
 
-### 2. 安装与配置 NERDCTL 或 Docker
-由于您使用的是 containerd，建议安装 `nerdctl` 来进行镜像构建和推送（操作习惯与 docker 一致），或者直接使用 `ctr` / `crictl`。如果节点上已有 Docker，也可以直接用 Docker push。
+### 2. 安装 NERDCTL 工具
+由于您的底层运行时是 containerd，强烈建议安装 `nerdctl`。它完美兼容 docker 的命令习惯，可以直接用来登录 Harbor 和推送镜像。
 
+请在您的节点上执行以下命令安装（因为 K8s 已经为您配置好了网络和 containerd，所以只需下载基础版命令即可）：
+```bash
+wget https://github.com/containerd/nerdctl/releases/download/v1.7.6/nerdctl-1.7.6-linux-amd64.tar.gz
+tar -zxvf nerdctl-1.7.6-linux-amd64.tar.gz -C /usr/local/bin/ nerdctl
+nerdctl version
+```
 登录 Harbor：
 ```bash
 # 使用 nerdctl 或 docker
