@@ -7,8 +7,8 @@
 ### 1. 安装 Helm
 如果您的主节点还未安装 Helm，请执行以下命令安装：
 ```bash
-wget https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz
-tar -zxvf helm-v3.12.0-linux-amd64.tar.gz
+wget https://get.helm.sh/helm-v4.2.1-linux-amd64.tar.gz
+tar -zxvf helm-v4.2.1-linux-amd64.tar.gz
 mv linux-amd64/helm /usr/local/bin/helm
 helm version
 ```
