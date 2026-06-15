@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor-test-nginx
+  labels:
+    app: harbor-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harbor-test
+  template:
+    metadata:
+      labels:
+        app: harbor-test
+    spec:
+      containers:
+      - name: nginx
+        # 这里的镜像地址需替换为您 push 到 Harbor 后的地址
+        image: <VM_IP>:30002/my-project/nginx:alpine
+        ports:
+        - containerPort: 80
+      # 这里指定拉取镜像时使用的 Secret 名字
+      imagePullSecrets:
+      - name: harbor-login-secret

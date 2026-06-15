@@ -1,0 +1,44 @@
+# 此配置文件用于在 K8s 测试集群中通过 Helm 部署 Harbor
+# 去除了复杂的组件以减轻虚拟机负担，并配置 HTTP + NodePort 访问
+
+expose:
+  type: nodePort
+  tls:
+    enabled: false
+  nodePort:
+    name: harbor
+    ports:
+      http:
+        # 指定 NodePort 端口，您可以按需修改，范围通常是 30000-32767
+        port: 30002
+
+# 如果想使用域名，可以将此处修改为 hub.local.com 等，但请记得配置 hosts
+externalURL: http://<VM_IP>:30002
+
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      # 如果集群没有默认 storage class，测试时可以改为 false 放弃持久化
+      # 或事先部署 hostPath provisioner
+      size: 5Gi
+    jobservice:
+      size: 1Gi
+    database:
+      size: 1Gi
+    redis:
+      size: 1Gi
+    trivy:
+      size: 1Gi
+
+# 禁用 notary 签名服务（测试不需要）
+notary:
+  enabled: false
+
+# 禁用 trivy 漏洞扫描（如果虚拟机内存小，建议禁用）
+trivy:
+  enabled: false
+
+# 核心配置
+harborAdminPassword: "Harbor12345"
