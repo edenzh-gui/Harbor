@@ -78,14 +78,14 @@ helm pull harbor/harbor --untar
 ```
 执行完毕后，您所在的当前目录下会多出一个名为 `harbor` 的文件夹，里面包含了该版本所有的模板文件和默认 `values.yaml`。
 
-### 2. 使用本地 Chart 和自定义 `harbor-values.yaml` 安装
-将本项目生成的自定义配置文件 `harbor-values.yaml` 上传到您的主节点，并确保它放在与刚解压出来的 `harbor` 目录**同级的路径下**。
+### 2. 修改配置并执行本地安装
+您可以直接进入解压出的 `harbor` 目录，编辑里面的 `values.yaml` 文件来修改配置（主要需要修改 `expose.type` 为 `nodePort`，关闭 `tls`，并设置 `externalURL` 为您的 IP 地址等）。
 
-创建命名空间，并指定**本地解压的目录**执行安装：
+修改完毕后，退回到 `harbor` 目录的上一级，创建命名空间并执行安装：
 ```bash
 kubectl create namespace harbor
-# 安装 harbor，注意这里使用的是本地的 ./harbor 目录
-helm install my-harbor ./harbor -n harbor -f harbor-values.yaml
+# 安装 harbor，这里指定使用当前目录下的 harbor 文件夹进行安装
+helm install my-harbor ./harbor -n harbor
 ```
 
 等待 Pod 启动完毕：
